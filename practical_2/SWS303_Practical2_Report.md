@@ -13,17 +13,17 @@
 
 ## Executive Summary
 
-In this practical, I explored different ways to monitor and analyze logs on a Linux system by setting up a privilege escalation detection service. I tested four different approaches to see how they work in real situations: checking service status with `systemctl`, watching the script run directly, using `tail -f` to follow log files, and using `journalctl` for systemd logs. Each method has its own strengths and weaknesses, and I found that using them together gives you a much better picture of what's happening on the system than relying on just one approach.
+This practical explored different methods for monitoring and analyzing logs on a Linux system through the implementation of a privilege escalation detection service. Four different approaches were tested to evaluate their effectiveness in real-world scenarios: checking service status with `systemctl`, monitoring script execution directly, using `tail -f` to follow log files, and utilizing `journalctl` for systemd logs. Each method demonstrated distinct strengths and weaknesses, and the study found that combining multiple approaches provided superior system visibility compared to relying on a single monitoring method.
 
 ## Objective
 
-The primary objective of this practical is to compare and analyze different Linux log monitoring methodologies to understand their effectiveness in detecting and responding to security incidents. Specifically, this practical aims to:
+The primary objective of this practical was to compare and analyze different Linux log monitoring methodologies to understand their effectiveness in detecting and responding to security incidents. Specifically, this practical aimed to:
 
 ### Primary Objectives:
 
 1. **Compare logging tools**: Evaluate the capabilities and limitations of `systemctl status`, direct script execution, `tail -f`, and `journalctl` for security monitoring
 2. **Demonstrate practical security monitoring**: Set up and test a real privilege escalation detection system using multiple monitoring approaches
-3. **Analyze detection effectiveness**: Assess how well each method captures and presents security events during an actual attack scenario
+3. **Analyze detection effectiveness**: Assess how well each method captured and presented security events during an actual attack scenario
 4. **Develop best practices**: Identify when and how to use each monitoring tool effectively in security operations
 
 ### Secondary Objectives:
@@ -35,14 +35,14 @@ The primary objective of this practical is to compare and analyze different Linu
 
 ## Overview
 
-This practical report is structured to provide a comprehensive analysis of Linux logging and monitoring methodologies through hands-on experimentation. The approach taken includes:
+This practical report was structured to provide a comprehensive analysis of Linux logging and monitoring methodologies through hands-on experimentation. The approach taken included:
 
 ### Methodology Overview:
 
 1. **Controlled Attack Simulation**: A deliberate privilege escalation attack was performed by modifying `/etc/passwd` file permissions and exploiting the vulnerability to gain root access
 2. **Multi-tool Monitoring**: Four different monitoring approaches were simultaneously employed to capture and analyze the attack events
 3. **Comparative Analysis**: Each monitoring method was evaluated based on real-time detection capability, historical analysis features, ease of use, and integration with system infrastructure
-4. **Security Assessment**: The practical demonstrates both offensive (attack execution) and defensive (monitoring and detection) security operations
+4. **Security Assessment**: The practical demonstrated both offensive (attack execution) and defensive (monitoring and detection) security operations
 
 ### Key Components:
 
@@ -53,100 +53,102 @@ This practical report is structured to provide a comprehensive analysis of Linux
 
 ### Expected Outcomes:
 
-By the end of this practical, I will have demonstrated competency in:
+By the completion of this practical, the student demonstrated competency in:
 
 - Understanding Linux logging architecture and security implications
 - Implementing multiple monitoring approaches for comprehensive security coverage
 - Analyzing log data to identify and investigate security incidents
 - Providing actionable recommendations for improving system security posture
 
-This practical bridges theoretical knowledge with hands-on security operations, providing practical experience that directly applies to real-world cybersecurity scenarios.
+This practical bridged theoretical knowledge with hands-on security operations, providing practical experience that directly applied to real-world cybersecurity scenarios.
 
 ## 1. Introduction
 
 ### 1.1 Background
 
-When working with Linux systems, especially in security operations, you need to keep track of what's happening on your servers. There are different ways to monitor logs and service outputs, and during this practical I wanted to understand which methods work best for different situations. Some tools are better for quick checks, while others are more useful when you need to dig deep into what went wrong.
+When working with Linux systems, especially in security operations, administrators need to maintain awareness of system activities through log monitoring. Various methods exist for monitoring logs and service outputs, and this practical sought to understand which methods work most effectively in different operational scenarios. Some tools are better suited for quick health checks, while others prove more valuable when conducting detailed forensic analysis.
 
-### 1.2 What I wanted to achieve
+### 1.2 Research Objectives
+
+This practical aimed to:
 
 - Test and compare different Linux log monitoring tools
-- See how useful each method is for actual security work
-- Set up a working security monitoring service to test with
-- Figure out how newer systemd tools work alongside traditional Unix logging
+- Evaluate the effectiveness of each method for security operations
+- Establish a working security monitoring service for testing purposes
+- Analyze how modern systemd tools integrate with traditional Unix logging methods
 
-### 1.3 What I focused on
+### 1.3 Scope of Investigation
 
-I decided to test four main approaches:
+Four main monitoring approaches were selected for comparison:
 
-1. Using `systemctl status` to check on services
-2. Running scripts directly and watching their output
-3. Traditional log watching with `tail -f`
-4. Using `journalctl` for systemd-managed logs
+1. Using `systemctl status` to check service health and recent activity
+2. Direct script execution monitoring for real-time output analysis
+3. Traditional log monitoring with `tail -f` for live event tracking
+4. Advanced log analysis using `journalctl` for systemd-managed services
 
-## 2. How I set everything up
+## 2. Methodology and System Configuration
 
-### 2.1 My test environment
+### 2.1 Test Environment Setup
 
-For this practical, I used:
+The practical was conducted using the following components:
 
-- A Linux system with systemd (which most modern distros have)
-- A custom service called `pe_detect.service` that I created to detect privilege escalation
-- Python for the detection script
-- The standard log files like `/var/log/auth.log` and the systemd journal
+- A Linux system with systemd (modern distribution)
+- A custom service designated `pe_detect.service` for privilege escalation detection
+- Python-based detection script for authentication monitoring
+- Standard log files including `/var/log/auth.log` and the systemd journal
 
-### 2.2 The detection service I built
+### 2.2 Detection Service Implementation
 
-I created a Python script that watches for suspicious authentication activity. The service:
+A Python script was developed to monitor suspicious authentication activity. The service provided:
 
-- Keeps an eye on login attempts and privilege changes in real-time
-- Outputs data in JSON format so it's easier to process later
-- Works with systemd so it can start automatically
-- Writes information to both the screen and system logs
+- Real-time monitoring of login attempts and privilege changes
+- JSON-formatted output for structured data processing
+- Integration with systemd for automatic service management
+- Dual output to both console and system logging infrastructure
 
-This gave me something realistic to monitor while I tested the different logging approaches.
+This implementation provided realistic security events for testing the various monitoring approaches.
 
-### 2.3 Setting up the privilege escalation attack scenario
+### 2.3 Privilege Escalation Attack Scenario Configuration
 
-Before I could properly test the monitoring tools, I needed to create actual security events to detect. I decided to simulate a privilege escalation attack that would generate log entries for my monitoring tools to catch.
+To properly test the monitoring tools, actual security events needed to be generated for detection. A privilege escalation attack was simulated to create log entries for analysis by the various monitoring tools.
 
-#### Step 1: Exploiting file permissions
+#### Step 1: File Permission Exploitation
 
-First, I intentionally created a vulnerability by changing the permissions on the `/etc/passwd` file:
+An intentional vulnerability was created by modifying the permissions on the `/etc/passwd` file:
 
 ```bash
 sudo chmod 777 /etc/passwd
 ```
 
-This is dangerous because the `/etc/passwd` file contains critical user account information for the entire system. Normally, this file should only be writable by root, but by setting it to 777, I gave all users full read, write, and execute permissions.
+This configuration was dangerous because the `/etc/passwd` file contains critical user account information for the entire system. Under normal circumstances, this file should only be writable by root, but setting permissions to 777 granted all users full read, write, and execute access.
 
-**Why this matters**: The `/etc/passwd` file stores essential information about every user account, including usernames, user IDs, home directories, and default shells. If a regular user can modify this file, they can potentially give themselves or others elevated privileges.
+**Significance**: The `/etc/passwd` file stores essential information about every user account, including usernames, user IDs, home directories, and default shells. When a regular user can modify this file, they can potentially grant themselves or others elevated privileges.
 
-#### Step 2: Creating a test user
+#### Step 2: Test User Creation
 
-Next, I created a new user account that I could use for the attack:
+A new user account was created for use in the attack scenario:
 
 ```bash
 sudo useradd newUser
 sudo passwd user1
 ```
 
-This gave me a regular user account to work with during the privilege escalation test.
+This provided a regular user account for testing the privilege escalation procedure.
 
-#### Step 3: Preparing the password hash
+#### Step 3: Password Hash Preparation
 
-I needed to create a password hash that I could use to replace the root password:
+A password hash was generated for use in replacing the root password:
 
 ```bash
 # Encrypt password "hacked123"
 openssl passwd hacked123
 ```
 
-This generated an encrypted version of the password "hacked123" that I could insert into the passwd file.
+This generated an encrypted version of the password "hacked123" that could be inserted into the passwd file.
 
-#### Step 4: Executing the privilege escalation
+#### Step 4: Privilege Escalation Execution
 
-Finally, I switched to the regular user account and exploited the misconfigured file permissions:
+The regular user account was accessed and the misconfigured file permissions were exploited:
 
 ```bash
 # Switch to the regular user
@@ -158,94 +160,94 @@ nano /etc/passwd
 # Changed root:x: -> root:hashed_password:
 ```
 
-What I did here was replace the "x" in the root user's entry (which normally tells the system to look in `/etc/shadow` for the password) with the actual password hash I generated. This meant I could now log in as root using the password "hacked123".
+The procedure involved replacing the "x" in the root user's entry (which normally directs the system to look in `/etc/shadow` for the password) with the actual password hash that was generated. This modification enabled root login using the known password "hacked123".
 
-#### Step 5: Testing the privilege escalation
+#### Step 5: Privilege Escalation Validation
 
-After making this change, I was able to use `su` to switch to the root account using my known password. This would generate authentication events that my monitoring tools could detect.
+After implementing this change, the `su` command was used to switch to the root account using the known password. This action generated authentication events that could be detected by the monitoring tools.
 
-### 2.4 Why this approach was effective for testing
+### 2.4 Testing Approach Effectiveness
 
-This privilege escalation scenario was perfect for testing my monitoring tools because:
+This privilege escalation scenario proved ideal for testing the monitoring tools because:
 
-- **It generates real authentication events** that appear in `/var/log/auth.log`
-- **It involves actual privilege changes** that security tools should detect
-- **It's realistic** - similar attacks happen when systems are misconfigured
-- **It's safe** - I was doing this on my own test system and could easily restore the original file permissions
-- **It creates multiple log entries** across different monitoring approaches
+- **Real authentication events were generated** that appeared in `/var/log/auth.log`
+- **Actual privilege changes occurred** that security tools should detect
+- **The scenario was realistic** - similar attacks occur when systems are misconfigured
+- **The environment was controlled** - testing was conducted on a dedicated test system with easily reversible changes
+- **Multiple log entries were created** across different monitoring approaches
 
-## 3. What I found
+## 3. Results and Analysis
 
-Now that I had set up both the monitoring tools and created actual security events to detect, I could test how well each monitoring method captured and displayed the privilege escalation attempts.
+Both the monitoring tools and actual security events had been configured, enabling testing of how effectively each monitoring method captured and displayed the privilege escalation attempts.
 
-### 3.1 First method: Using systemctl status
+### 3.1 systemctl status Analysis
 
-I ran: `sudo systemctl status pe_detect.service`
+The command `sudo systemctl status pe_detect.service` was executed for analysis.
 
-This command turned out to be really useful for getting a quick overview. What I noticed when I checked the service status after performing the privilege escalation:
+This command proved highly useful for obtaining quick system overviews. Observations made when the service status was checked after privilege escalation included:
 
-When I checked the service status, I could see:
+The service status revealed:
 
-- Whether the service was actually running or had crashed
-- How much CPU and memory it was using (helpful for spotting problems)
-- The last few log messages right there in the output - including any alerts from my privilege escalation attempts
-- The process ID and some basic info about what systemd thinks is happening
-- Recent detection events from when I switched to root using the compromised password
+- Whether the service was operational or had encountered failures
+- Current CPU and memory utilization (valuable for identifying performance issues)
+- Recent log messages displayed directly in the output, including alerts from privilege escalation attempts
+- Process ID and basic information about systemd's service interpretation
+- Recent detection events from root access using the compromised password
 
-What worked well:
+Advantages observed:
 
-- Super quick way to check if the detection service caught my attack
-- Don't need to hunt around for log files
-- Shows both service health AND recent security events in one place
-- Easy to remember command
-- Immediately showed me that my privilege escalation was detected
+- Rapid method for verifying detection service response to attacks
+- No requirement to search through multiple log files
+- Consolidated display of service health and recent security events
+- Easily memorable command syntax
+- Immediate confirmation of privilege escalation detection
 
-What didn't work so well:
+Limitations identified:
 
-- Only shows the most recent messages, so if I had done multiple attacks, I might miss earlier ones
-- Not useful if I wanted to watch attacks happen in real-time
-- Sometimes the filtering hides important details about the attack methods
+- Display limited to most recent messages, potentially missing earlier attack attempts
+- No real-time monitoring capabilities for ongoing attacks
+- Filtering mechanisms occasionally obscured important attack details
 
-### 3.2 Second method: Running the script directly
+### 3.2 Direct Script Execution Analysis
 
-Instead of running it as a service, I also tried just executing the Python script directly while I performed the privilege escalation attack.
+Direct execution of the Python script was tested as an alternative to service-based operation during the privilege escalation attack.
 
-What I saw:
-This was really interesting because I got to see everything the script was doing in real-time as I executed my attack. The output included:
+Observations made:
+The direct execution approach proved particularly revealing as it provided real-time visibility into script operations during attack execution. The output included:
 
-- Live events as they happened (like when I used `su` to switch to root with my compromised password)
-- Nicely formatted JSON data with timestamps showing exactly when the privilege escalation occurred
-- Warning messages about deprecated code (which helped me understand the script better)
-- Raw detection data that showed the authentication events from my attack
-- Immediate alerts when the system detected the suspicious root access
+- Live events as they occurred (such as `su` commands used to switch to root with the compromised password)
+- Structured JSON data with timestamps showing precise privilege escalation timing
+- Warning messages about deprecated code (which aided in script understanding)
+- Raw detection data displaying authentication events from the attack
+- Immediate alerts when suspicious root access was detected
 
-The good parts:
+Advantages identified:
 
-- Perfect for testing and debugging - I could see the detection happening immediately as I performed each step of the attack
-- No system log formatting getting in the way of seeing the raw security events
-- Great when developing security tools because you get instant feedback about whether your attack was detected
-- Easy to see exactly which parts of my privilege escalation triggered alerts
-- Could watch the correlation between my `su` commands and the detection events
+- Optimal for testing and debugging with immediate detection visibility during each attack step
+- Unfiltered access to raw security events without system log formatting interference
+- Excellent feedback mechanism for security tool development and attack detection validation
+- Clear visibility into which privilege escalation components triggered alerts
+- Direct correlation observation between `su` commands and detection events
 
-The problems:
+Limitations encountered:
 
-- If I close the terminal or log out, I lose all the attack evidence
-- Doesn't integrate with the system's logging infrastructure, so other security tools might miss it
-- Not practical for production monitoring since it's not persistent
-- Hard to correlate with other system events that might be related to the attack
+- Terminal closure or logout resulted in complete loss of attack evidence
+- Lack of integration with system logging infrastructure, potentially causing other security tools to miss events
+- Impractical for production monitoring due to non-persistent nature
+- Difficulty correlating with other system events related to the attack
 
-### 3.3 Third method: Good old tail -f
+### 3.3 Traditional Log Monitoring Analysis
 
-Command: `sudo tail -f /var/log/auth.log`
+The command `sudo tail -f /var/log/auth.log` was employed for traditional log monitoring.
 
-This is the classic Unix way of watching logs, and it worked really well for seeing my privilege escalation attack unfold in real-time. I pointed it at the authentication log to see what was happening with my login attempts and privilege changes.
+This classic Unix approach to log monitoring proved highly effective for observing privilege escalation attacks in real-time. The authentication log was monitored to track login attempts and privilege changes.
 
-What I observed during my attack:
+Attack observations included:
 
-- Real-time authentication events scrolling by as I performed each step
-- Messages from `pam_unix` when I switched users and gained root access
-- Session start/end events showing the exact timeline of my attack
-- The familiar syslog format that clearly showed my user switching to root
+- Real-time authentication events displayed as each attack step was performed
+- `pam_unix` messages generated when user switching and root access occurred
+- Session start/end events providing precise attack timeline information
+- Standard syslog format clearly displaying user transitions to root
 - Clear evidence of my successful privilege escalation in the standard log format
 
 I could see events like:
@@ -455,7 +457,6 @@ During this practical, I realized that you really need to use several monitoring
 2. **Write scripts to connect the dots** between different log sources
 3. **Document when to use what** so your team knows the best tool for each situation
 4. **Practice with all the tools** so you're comfortable when there's an actual incident
-
 
 ## 7. Sources
 
