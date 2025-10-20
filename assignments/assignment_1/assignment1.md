@@ -614,9 +614,8 @@ sudo filebeat test output
 All configuration files provided in sections 2.1 and 2.2.
 
 **Dashboard JSON Exports:**
-- dashboard_firewall_activity.json
-- dashboard_authentication_security.json
-- dashboard_network_intrusion.json
+
+- dashboards.ndjson
 
 ### Appendix C: References
 
